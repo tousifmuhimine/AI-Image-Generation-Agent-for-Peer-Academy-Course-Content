@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peer Academy — AI Image Generation Agent</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #ffffff; --bg2: #f5f5f3; --bg3: #eeede8;
+    --text: #1a1a18; --text2: #6b6a64; --text3: #9b9a94;
+    --border: rgba(0,0,0,0.12); --border2: rgba(0,0,0,0.22);
+    --info-bg: #e6f1fb; --info-text: #185fa5; --info-border: rgba(24,95,165,0.3);
+    --success-bg: #eaf3de; --success-text: #3b6d11; --success-border: rgba(59,109,17,0.3);
+    --danger-bg: #fcebeb; --danger-text: #a32d2d; --danger-border: rgba(163,45,45,0.3);
+    --warn-bg: #faeeda; --warn-text: #854f0b; --warn-border: rgba(133,79,11,0.3);
+    --radius: 8px; --radius-lg: 12px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1e1e1c; --bg2: #282825; --bg3: #323230;
+      --text: #e8e6dc; --text2: #9b9a94; --text3: #6b6a64;
+      --border: rgba(255,255,255,0.1); --border2: rgba(255,255,255,0.2);
+      --info-bg: #042c53; --info-text: #85b7eb; --info-border: rgba(133,183,235,0.3);
+      --success-bg: #173404; --success-text: #97c459; --success-border: rgba(151,196,89,0.3);
+      --danger-bg: #501313; --danger-text: #f09595; --danger-border: rgba(240,149,149,0.3);
+      --warn-bg: #412402; --warn-text: #ef9f27; --warn-border: rgba(239,159,39,0.3);
+    }
+  }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg3); color: var(--text); min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 780px; margin: 0 auto; }
+  .header { margin-bottom: 2rem; }
+  .header h1 { font-size: 22px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+  .header p { font-size: 14px; color: var(--text2); }
+  .badge { display: inline-block; padding: 2px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; background: var(--info-bg); color: var(--info-text); border: 0.5px solid var(--info-border); margin-bottom: 10px; }
+  .card { background: var(--bg); border: 0.5px solid var(--border); border-radius: var(--radius-lg); padding: 1.5rem; margin-bottom: 1rem; }
+  .section-label { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text3); margin-bottom: 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-group.full { grid-column: 1 / -1; }
+  .form-group label { font-size: 12px; font-weight: 500; color: var(--text2); }
+  .form-group input, .form-group select, .form-group textarea {
+    font-family: inherit; font-size: 13px; padding: 8px 11px;
+    border: 0.5px solid var(--border2); border-radius: var(--radius);
+    background: var(--bg); color: var(--text); outline: none; resize: vertical;
+    transition: border-color 0.15s;
+  }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--info-text); }
+  .form-group textarea { min-height: 90px; }
+  .api-note { font-size: 12px; color: var(--text3); margin-top: 6px; }
+  .api-note a { color: var(--info-text); }
+  .btn { width: 100%; padding: 11px; font-family: inherit; font-size: 14px; font-weight: 500;
+    cursor: pointer; border-radius: var(--radius); border: 0.5px solid var(--border2);
+    background: var(--bg); color: var(--text); transition: background 0.15s;
+    display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 16px; }
+  .btn:hover { background: var(--bg2); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .spinner { width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--text); border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .stage-bar { display: flex; gap: 8px; margin: 18px 0 4px; }
+  .stage-pill { flex: 1; padding: 7px 8px; border-radius: var(--radius); font-size: 11px; font-weight: 500; text-align: center; border: 0.5px solid var(--border); color: var(--text2); background: var(--bg2); transition: all 0.3s; }
+  .stage-pill.active { border-color: var(--info-border); color: var(--info-text); background: var(--info-bg); }
+  .stage-pill.done { border-color: var(--success-border); color: var(--success-text); background: var(--success-bg); }
+  .output-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 14px; }
+  .out-card { border: 0.5px solid var(--border); border-radius: var(--radius); padding: 11px 13px; background: var(--bg2); }
+  .out-card.full { grid-column: 1 / -1; }
+  .out-label { font-size: 11px; color: var(--text3); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .out-value { font-size: 13px; color: var(--text); line-height: 1.6; }
+  .score-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+  .score-num { font-size: 22px; font-weight: 600; }
+  .score-bar { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; background: var(--success-text); transition: width 1s ease; }
+  .safety-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 500; }
+  .safe { background: var(--success-bg); color: var(--success-text); border: 0.5px solid var(--success-border); }
+  .unsafe { background: var(--warn-bg); color: var(--warn-text); border: 0.5px solid var(--warn-border); }
+  .error-box { background: var(--danger-bg); border: 0.5px solid var(--danger-border); color: var(--danger-text); border-radius: var(--radius); padding: 11px 14px; font-size: 13px; margin-top: 12px; line-height: 1.5; }
+  .divider { border: none; border-top: 0.5px solid var(--border); margin: 20px 0; }
+  .copy-btn { font-size: 11px; padding: 3px 8px; border: 0.5px solid var(--border2); border-radius: 4px; background: var(--bg); color: var(--text2); cursor: pointer; float: right; margin-top: -2px; }
+  .copy-btn:hover { background: var(--bg2); }
+  @media (max-width: 540px) {
+    .form-grid, .output-grid { grid-template-columns: 1fr; }
+    .form-group.full { grid-column: 1; }
+    .out-card.full { grid-column: 1; }
+    .stage-bar { flex-direction: column; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <span class="badge">Peer Academy · AI Agent</span>
+    <h1>Image Generation Agent</h1>
+    <p>Analyzes course content through a 3-stage pipeline and generates structured visual plans for educational images.</p>
+  </div>
+
+  <div class="card">
+    <p class="section-label">API Configuration</p>
+    <div class="form-group">
+      <label>Anthropic API Key</label>
+      <input type="password" id="api-key" placeholder="sk-ant-..." autocomplete="off">
+      <span class="api-note">Your key stays in your browser only. Get one at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <p class="section-label">Course Content Input</p>
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Course title</label>
+        <input type="text" id="f-course" value="Introduction to Python Programming">
+      </div>
+      <div class="form-group">
+        <label>Module title</label>
+        <input type="text" id="f-module" value="Understanding Variables and Data Types">
+      </div>
+      <div class="form-group">
+        <label>Lesson title</label>
+        <input type="text" id="f-lesson" value="What is a Variable?">
+      </div>
+      <div class="form-group">
+        <label>Target learner level</label>
+        <select id="f-level">
+          <option>Beginner</option>
+          <option>Intermediate</option>
+          <option>Advanced</option>
+          <option>All levels</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Lesson content</label>
+        <textarea id="f-content">A variable is a named container in computer memory that stores a value. Think of it like a labeled box: you give it a name and put something inside. In Python, you create a variable by writing a name, then an equals sign, then the value. For example: name = "Alice" stores the text Alice. Variables can hold numbers, text, lists, and more. You can change what's inside a variable at any time.</textarea>
+      </div>
+      <div class="form-group full">
+        <label>Learning objective</label>
+        <input type="text" id="f-objective" value="Students will understand what a variable is and how to create one in Python">
+      </div>
+      <div class="form-group">
+        <label>Image purpose</label>
+        <select id="f-purpose">
+          <option>Lesson visual / explanation image</option>
+          <option>Course thumbnail</option>
+          <option>Module banner</option>
+          <option>Learning diagram</option>
+          <option>Section header</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Preferred visual style</label>
+        <select id="f-style">
+          <option>Flat illustration</option>
+          <option>Photorealistic</option>
+          <option>Diagram / infographic</option>
+          <option>Isometric 3D</option>
+          <option>Sketch / hand-drawn</option>
+          <option>Minimalist icon-style</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Platform placement</label>
+        <select id="f-placement">
+          <option>Inline within lesson content</option>
+          <option>Course homepage banner</option>
+          <option>Module header</option>
+          <option>Lesson thumbnail card</option>
+          <option>Social media share image</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" id="gen-btn" onclick="runAgent()">
+      <i class="ti ti-sparkles"></i> Generate Visual Plan
+    </button>
+  </div>
+
+  <div id="stage-area" style="display:none" class="card">
+    <p class="section-label">Pipeline Progress</p>
+    <div class="stage-bar">
+      <div class="stage-pill" id="s1">1 · Analyzing content</div>
+      <div class="stage-pill" id="s2">2 · Planning visual</div>
+      <div class="stage-pill" id="s3">3 · Writing prompt</div>
+    </div>
+  </div>
+
+  <div id="error-area"></div>
+  <div id="output-area"></div>
+</div>
+
+<script>
+const SYSTEM_PROMPT = `You are an expert educational visual designer for Peer Academy, an online learning platform. Your job is to analyze course content and generate structured image generation plans for educational use.
+
+You must follow a strict 3-stage internal pipeline:
+1. ANALYZE: Understand the educational content — core topic, learning objective, learner level, key concept being taught.
+2. PLAN: Decide what visual would best support learning — concept, metaphor, visual type, style.
+3. GENERATE: Write the final image prompt based on your analysis and plan.
+
+Respond with ONLY a valid JSON object. No markdown, no backticks, no explanation. Return exactly these 10 keys:
+{
+  "image_concept": "1-2 sentence description of the visual concept and why it aids learning",
+  "image_prompt": "Full detailed image generation prompt, 50-100 words, ready for DALL-E or Stable Diffusion",
+  "negative_prompt": "Comma-separated list of things to avoid in the image",
+  "image_purpose": "Specific purpose this image serves in the lesson",
+  "aspect_ratio": "e.g. 16:9 or 1:1 or 4:3",
+  "suggested_placement": "Where on the Peer Academy platform this image should appear",
+  "alt_text": "Accessibility alt text for screen readers, one sentence",
+  "safety_check": "SAFE or UNSAFE — followed by one sentence reason",
+  "course_relevance_score": <integer 0 to 100>,
+  "image_url": null
+}`;
+
+async function runAgent() {
+  const apiKey = document.getElementById('api-key').value.trim();
+  if (!apiKey) { showError('Please enter your Anthropic API key above.'); return; }
+
+  const fields = {
+    course: document.getElementById('f-course').value.trim(),
+    module: document.getElementById('f-module').value.trim(),
+    lesson: document.getElementById('f-lesson').value.trim(),
+    content: document.getElementById('f-content').value.trim(),
+    objective: document.getElementById('f-objective').value.trim(),
+    level: document.getElementById('f-level').value,
+    purpose: document.getElementById('f-purpose').value,
+    style: document.getElementById('f-style').value,
+    placement: document.getElementById('f-placement').value
+  };
+
+  if (!fields.lesson || !fields.content) { showError('Please fill in at least the lesson title and lesson content.'); return; }
+
+  document.getElementById('error-area').innerHTML = '';
+  document.getElementById('output-area').innerHTML = '';
+
+  const btn = document.getElementById('gen-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<div class="spinner"></div> Running pipeline...';
+
+  const stageArea = document.getElementById('stage-area');
+  stageArea.style.display = 'block';
+  const stages = ['s1','s2','s3'];
+  let si = 0;
+  const iv = setInterval(() => {
+    if (si > 0) document.getElementById(stages[si-1]).className = 'stage-pill done';
+    if (si < stages.length) { document.getElementById(stages[si]).className = 'stage-pill active'; si++; }
+    else clearInterval(iv);
+  }, 1800);
+
+  const userMessage = `Generate an image visual plan for this Peer Academy lesson:
+
+Course title: ${fields.course}
+Module title: ${fields.module}
+Lesson title: ${fields.lesson}
+Target learner level: ${fields.level}
+Learning objective: ${fields.objective}
+Image purpose: ${fields.purpose}
+Preferred visual style: ${fields.style}
+Platform placement: ${fields.placement}
+
+Lesson content:
+${fields.content}
+
+Follow the 3-stage pipeline and return the structured JSON output.`;
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey, 'anthropic-version': '2023-06-01', 'anthropic-dangerous-direct-browser-access': 'true' },
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1000, system: SYSTEM_PROMPT, messages: [{ role: 'user', content: userMessage }] })
+    });
+    clearInterval(iv);
+    stages.forEach(s => document.getElementById(s).className = 'stage-pill done');
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    const raw = (data.content || []).map(b => b.text || '').join('');
+    const result = JSON.parse(raw.replace(/```json|```/g,'').trim());
+    renderOutput(result);
+  } catch(err) {
+    clearInterval(iv);
+    showError('Pipeline error: ' + err.message);
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-sparkles"></i> Generate Visual Plan';
+}
+
+function renderOutput(r) {
+  const score = Math.min(100, Math.max(0, parseInt(r.course_relevance_score) || 0));
+  const isSafe = (r.safety_check || '').toUpperCase().startsWith('SAFE');
+  document.getElementById('output-area').innerHTML = `
+    <div class="card">
+      <p class="section-label">Generated Visual Plan</p>
+      <div class="output-grid">
+        <div class="out-card full">
+          <div class="out-label">Image concept</div>
+          <div class="out-value">${esc(r.image_concept)}</div>
+        </div>
+        <div class="out-card full">
+          <div class="out-label">Image prompt <button class="copy-btn" onclick="copyText('${esc2(r.image_prompt)}')"><i class="ti ti-copy"></i> Copy</button></div>
+          <div class="out-value">${esc(r.image_prompt)}</div>
+        </div>
+        <div class="out-card full">
+          <div class="out-label">Negative prompt <button class="copy-btn" onclick="copyText('${esc2(r.negative_prompt)}')"><i class="ti ti-copy"></i> Copy</button></div>
+          <div class="out-value">${esc(r.negative_prompt)}</div>
+        </div>
+        <div class="out-card">
+          <div class="out-label">Image purpose</div>
+          <div class="out-value">${esc(r.image_purpose)}</div>
+        </div>
+        <div class="out-card">
+          <div class="out-label">Aspect ratio</div>
+          <div class="out-value" style="font-size:18px;font-weight:600">${esc(r.aspect_ratio)}</div>
+        </div>
+        <div class="out-card">
+          <div class="out-label">Suggested placement</div>
+          <div class="out-value">${esc(r.suggested_placement)}</div>
+        </div>
+        <div class="out-card">
+          <div class="out-label">Alt text</div>
+          <div class="out-value">${esc(r.alt_text)}</div>
+        </div>
+        <div class="out-card">
+          <div class="out-label">Safety check</div>
+          <div class="out-value">
+            <span class="safety-badge ${isSafe ? 'safe' : 'unsafe'}">${isSafe ? '✓ Safe' : '⚠ Review needed'}</span>
+            <p style="font-size:12px;color:var(--text2);margin-top:6px">${esc(r.safety_check)}</p>
+          </div>
+        </div>
+        <div class="out-card full">
+          <div class="out-label">Course relevance score</div>
+          <div class="score-wrap">
+            <span class="score-num">${score}</span>
+            <span style="font-size:13px;color:var(--text2)">/ 100</span>
+          </div>
+          <div class="score-bar"><div class="score-fill" style="width:${score}%"></div></div>
+        </div>
+        <div class="out-card full">
+          <div class="out-label">Image URL (Phase 3)</div>
+          <div class="out-value" style="color:var(--text3);font-size:12px">
+            ${r.image_url ? `<a href="${esc(r.image_url)}" target="_blank">${esc(r.image_url)}</a>` : 'Not connected — connect DALL·E or Stable Diffusion API to enable image generation.'}
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function showError(msg) {
+  document.getElementById('error-area').innerHTML = `<div class="error-box"><i class="ti ti-alert-circle"></i> ${msg}</div>`;
+}
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function esc2(s) { return String(s||'').replace(/'/g,"\\'").replace(/"/g,'&quot;'); }
+function copyText(t) { navigator.clipboard.writeText(t).catch(()=>{}); }
+</script>
+</body>
+</html>

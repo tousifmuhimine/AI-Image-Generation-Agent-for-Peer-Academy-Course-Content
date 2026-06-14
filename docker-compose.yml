@@ -1,0 +1,36 @@
+services:
+  backend:
+    build:
+      context: ./agent_backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./agent_backend/.env
+    environment:
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - GROQ_API_KEY=${GROQ_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - HF_TOKEN=${HF_TOKEN}
+      - GEMINI_MODEL=${GEMINI_MODEL}
+      - GEMINI_IMAGE_MODEL=${GEMINI_IMAGE_MODEL}
+      - OPENAI_MODEL=${OPENAI_MODEL}
+      - OPENAI_IMAGE_MODEL=${OPENAI_IMAGE_MODEL}
+      - GROQ_MODEL=${GROQ_MODEL}
+      - ANTHROPIC_MODEL=${ANTHROPIC_MODEL}
+      - HF_IMAGE_MODEL=${HF_IMAGE_MODEL}
+      - HF_MODEL=${HF_MODEL}
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./agent_frontend
+      dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_AGENT_API: "http://localhost:8000"
+    ports:
+      - "3001:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
